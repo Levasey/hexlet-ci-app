@@ -1,17 +1,32 @@
 name: ci-app
-# on – определяет события, которые запускают воркфлоу
-on: push
+on:
+  push:
+    branches: [ main ]  # Можно добавить другие ветки, например, dev
+  pull_request:
+    branches: [ main ]  # Триггерится на PR в main
+
+env:
+  CI: true  # Устанавливаем переменную окружения CI=true (полезно для некоторых инструментов)
+
 jobs:
-  # build – произвольно выбранное имя задания
-  # их может быть больше одного
   build:
-    # операционная система для работы воркфлоу
-    runs-on: ubuntu-latest
-    steps: # список шагов, которые надо выполнить
-      # экшен — выполняет какую-то задачу
-      # checkout — клонирует репозиторий
-      - uses: actions/checkout@v4
-      # run – произвольная bash-команда
-      - run: make setup
-      - run: make test
-      - run: make lint
+    runs-on: ubuntu-latest  # Запускаем на последней Ubuntu
+
+    strategy:
+      matrix:
+        node-version: [18.x]  # Тестируем на Node.js 18 (можно добавить другие версии, например [16.x, 18.x])
+
+    steps:
+      - uses: actions/checkout@v4  # Клонируем репозиторий
+
+      - name: Use Node.js ${{ matrix.node-version }}  # Устанавливаем Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'  # Кэшируем node_modules для ускорения следующих запусков
+
+      - run: make install  # Устанавливаем зависимости (должен быть в Makefile)
+      - run: make lint     # Запускаем линтер (например, ESLint)
+      - run: make test    # Запускаем тесты (например, Jest/Mocha)
+
+      - uses: hexlet-components/hello-from-hexlet-action@release  # Пример кастомного действия
